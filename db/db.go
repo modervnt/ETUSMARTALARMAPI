@@ -27,4 +27,10 @@ func InitDB() {
 		fmt.Println("Error while migrating Table:", err)
 		return
 	}
+
+	err = DB.AutoMigrate(&models.FailedQuestion{})
+	if err != nil {
+		fmt.Println("Error while migrating Table:", err)
+		return
+	}
 }

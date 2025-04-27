@@ -33,11 +33,12 @@ var validate = validator.New()
 func (h *Handler) CreateUser(c *gin.Context) {
 	var newUser models.User
 	if err := c.ShouldBindJSON(&newUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Input"})
+		// On envoie l'erreur détaillée au client pour debug
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
 		return
 	}
 
-	//Data validation
+	// Data validation avec messages clairs
 	if err := validate.Struct(newUser); err != nil {
 		errors := err.(validator.ValidationErrors)
 		errorMessages := make([]string, len(errors))
@@ -50,19 +51,19 @@ func (h *Handler) CreateUser(c *gin.Context) {
 
 	hashedPassword, err := auth.HashPassword(newUser.Password)
 	if err != nil {
-		c.JSON(500, gin.H{"message": "Servor problem"})
-		fmt.Println("Hashing error: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Server problem"})
+		fmt.Println("Hashing error:", err)
 		return
 	}
 	newUser.Password = hashedPassword
 
-	//Creation of a new user
+	// Enregistrement en base
 	if err := h.Store.db.Create(&newUser).Error; err != nil {
-		c.JSON(500, gin.H{"error": "User not created!"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User not created!"})
 		return
 	}
-	c.JSON(200, newUser)
 
+	c.JSON(http.StatusOK, newUser)
 }
 
 func (h *Handler) LoginUser(c *gin.Context) {
